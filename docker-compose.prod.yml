@@ -1,0 +1,70 @@
+# docker-compose para producción.
+# Topología single-domain: el navegador habla SOLO con el frontend (nginx :80),
+# y nginx hace proxy_pass de /api/* al backend en la red interna. La DB y el
+# backend NO se exponen al host — quedan inaccesibles desde fuera.
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Para deploy bajo un dominio (ej. http://www.servigtdev.com/):
+#   1) Apuntar el A record del dominio al IP del servidor.
+#   2) Levantar este compose en el servidor.
+#   3) (Opcional pero recomendado) reverse proxy externo con TLS — ver docs/DEPLOY.md.
+
+services:
+  db:
+    build: ./db
+    container_name: proy2web_db_prod
+    restart: unless-stopped
+    command: ["postgres", "-p", "${POSTGRES_PORT}"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Sin "ports": la DB solo es accesible para el backend dentro de la red de compose.
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: proy2web_backend_prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${BACKEND_PORT}
+      DB_HOST: db
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET}
+    # Sin "ports": el backend solo se alcanza vía nginx desde el frontend.
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: proy2web_frontend_prod
+    restart: unless-stopped
+    environment:
+      # Apunta a "backend:PORT" dentro de la red interna del compose.
+      BACKEND_HOST: backend:${BACKEND_PORT}
+    ports:
+      # Único puerto expuesto al mundo. En el servidor real podés mapear "80:80".
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata_prod:

@@ -1,0 +1,201 @@
+/* Reset mínimo y tipografía base */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { margin: 0; padding: 0; min-height: 100vh; }
+
+body {
+  font-family: "Helvetica Neue", system-ui, sans-serif;
+  color: #4A1031;
+  background: #FFF0F5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; }
+
+/* ============ Header / Nav ============ */
+.app-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #FFE0EC;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 12px rgba(199, 21, 133, 0.06);
+  position: relative;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.app-header__title {
+  color: #C71585;
+  font-size: 1.6rem;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.app-header__hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid #FFE0EC;
+  color: #C71585;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.3rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-nav { display: flex; gap: 6px; }
+
+.nav-item {
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #8E2C5C;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms ease, color 120ms ease;
+}
+.nav-item:hover { background: #FFE0EC; }
+.nav-item--active { color: white; background: #C71585; }
+.nav-item--active:hover { background: #C71585; }
+
+.nav-item__badge {
+  background: #FF69B4;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.app-header__user-info { text-align: right; }
+.app-header__user-role {
+  font-size: 0.75rem;
+  color: #8E2C5C;
+}
+.app-header__user-name {
+  font-weight: 700;
+  color: #4A1031;
+  font-size: 0.95rem;
+}
+
+.btn-ghost-primary {
+  background: transparent;
+  border: 1px solid #C71585;
+  color: #C71585;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.btn-ghost-primary:disabled { cursor: wait; opacity: 0.7; }
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 28px 80px;
+  background: linear-gradient(180deg, #FFF0F5 0%, #FFE4EE 100%);
+  min-height: calc(100vh - 70px);
+}
+
+/* ============ Tablas con scroll horizontal en móvil ============ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table { min-width: 600px; }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .app-header__brand {
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-header__title { font-size: 1.25rem; }
+
+  .app-header__hamburger { display: inline-flex; }
+
+  .app-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-bottom: 1px solid #FFE0EC;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 24px rgba(199, 21, 133, 0.12);
+    z-index: 20;
+  }
+  .app-nav--open { display: flex; }
+  .nav-item { width: 100%; justify-content: space-between; }
+
+  .app-header__user-info { display: none; }
+
+  .app-main {
+    padding: 20px 16px 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header__title { font-size: 1.1rem; }
+  .btn-ghost-primary { padding: 5px 10px; font-size: 0.8rem; }
+}
+
+/* ============ Print (Exportar PDF) ============ */
+@media print {
+  /* Oculta toda la UI excepto la sección del reporte */
+  body * { visibility: hidden; }
+  .reporte-printable, .reporte-printable * { visibility: visible; }
+  .reporte-printable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+  }
+  .reporte-printable button { display: none; }
+  .app-header, .app-nav, .app-header__user { display: none !important; }
+}
+
+/* ============ Grids responsivos ============ */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr; }
+}
