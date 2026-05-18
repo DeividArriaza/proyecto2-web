@@ -49,18 +49,26 @@ Cuando los tres servicios estén `healthy/up` (≈ 30 segundos), todo el sitio e
 
 El **backend y la DB no se exponen al host** — viven en la red interna de Docker. El frontend habla con el API por rutas relativas (`/api/*`) y nginx (dentro del contenedor del frontend) hace `proxy_pass` al backend. Mismo comportamiento en desarrollo y en producción.
 
-Abrí el frontend, va a redirigir automáticamente a `/login`. Las credenciales para entrar son:
+Abrí el frontend, va a redirigir automáticamente a `/login`.
+
+### Credenciales del administrador
 
 ```
 usuario:    ericka
 contraseña: demo123
 ```
 
+**Ericka Sandoval** es la cuenta de administradora (rol `Administrador`, sucursal `Bubu's Bakery`). Tiene acceso a todos los CRUDs, reportes y al registro de ventas.
+
+Los otros 24 empleados sembrados también entran con `demo123`, pero solo Ericka tiene rol de admin.
+
+> Desde la pantalla de login también podés tocar "Crear cuenta" para registrar un empleado nuevo. Las cuentas creadas por signup público quedan con rol `Vendedor Mostrador`.
+
 Detener: `docker compose down` (preserva datos) o `docker compose down -v` (borra el volumen y vuelve a sembrar).
 
 ---
 
-## Credenciales
+## Credenciales (resumen)
 
 ### Base de datos (fijas, exigidas por la rúbrica)
 
@@ -70,14 +78,13 @@ contraseña: secret
 db:         tienda
 ```
 
-### Login en la aplicación
+### Aplicación
 
-```
-usuario:    ericka
-contraseña: demo123
-```
-
-Ericka Sandoval es la administradora (rol `Administrador`, sucursal `Bubu's Bakery`). Los otros 24 empleados también pueden iniciar sesión con `demo123`, pero solo Ericka tiene rol de admin.
+| Tipo                 | Usuario   | Contraseña | Rol                  |
+| -------------------- | --------- | ---------- | -------------------- |
+| **Administrador**    | `ericka`  | `demo123`  | Administrador        |
+| Resto del seed (24)  | ver `02_seed.sql` | `demo123` | varios (Gerente, Cajero, etc.) |
+| Cuenta nueva (signup desde la UI) | _vos elegís_ | _vos elegís_ | Vendedor Mostrador |
 
 ---
 
