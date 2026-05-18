@@ -27,7 +27,7 @@ Todas las consultas son **SQL explícito**, sin ORMs que oculten el SQL.
 ## Requisitos previos
 
 - Docker y Docker Compose instalados.
-- Puertos `55433`, `58082` y `58083` libres en el host.
+- Puerto `58083` libre en el host (configurable vía `FRONTEND_PORT` en `.env`).
 
 ---
 
@@ -40,13 +40,14 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Cuando los tres servicios estén `healthy/up` (≈ 30 segundos):
+Cuando los tres servicios estén `healthy/up` (≈ 30 segundos), todo el sitio está accesible bajo el mismo origen:
 
-| Servicio | URL                                  |
-| -------- | ------------------------------------ |
-| Frontend | <http://localhost:58083>             |
-| Backend  | <http://localhost:58082> (`/health`) |
-| DB       | `localhost:55433` (Postgres)         |
+| Recurso       | URL                                          |
+| ------------- | -------------------------------------------- |
+| Frontend SPA  | <http://localhost:58083>                     |
+| API (proxy)   | <http://localhost:58083/api/health>          |
+
+El **backend y la DB no se exponen al host** — viven en la red interna de Docker. El frontend habla con el API por rutas relativas (`/api/*`) y nginx (dentro del contenedor del frontend) hace `proxy_pass` al backend. Mismo comportamiento en desarrollo y en producción.
 
 Abrí el frontend, va a redirigir automáticamente a `/login`. Las credenciales para entrar son:
 
@@ -246,16 +247,19 @@ Banners reutilizables (`ErrorBanner` / `SuccessBanner`) + validación inline por
 
 ## Producción
 
-Smoke-test local con los Dockerfiles de producción (frontend buildeado y servido por nginx, con `proxy_pass /api/ → backend` integrado):
+El mismo `docker compose up` levanta el setup de producción. No hay archivos `*.prod.yml` ni comandos especiales: la imagen del frontend siempre buildea con Vite y sirve con nginx; el backend siempre corre `node` sin watch. La única diferencia entre tu laptop y el server es el valor de `FRONTEND_PORT` en `.env` (en el server lo mapeás a `80`):
 
 ```bash
-docker compose -f docker-compose.prod.yml up --build
+# en el servidor
+git clone <url-del-repo>
+cd proyecto2-web
+cp .env.example .env
+sed -i "s/cambiame-en-produccion/$(openssl rand -hex 32)/" .env
+sed -i "s/FRONTEND_PORT=.*/FRONTEND_PORT=80/" .env
+docker compose up -d --build
 ```
 
-Eso levanta el sitio en <http://localhost:58083/> con todo bajo el mismo origen
-(el backend y la DB **no quedan expuestos al host**).
-
-Para el deploy real (VPS con dominio, Fly.io o Render), seguir la guía en [`docs/DEPLOY.md`](docs/DEPLOY.md). El caso `www.servigtdev.com` está cubierto paso a paso en la Opción C.
+Apuntar el A record del dominio al IP del servidor y listo. Guía detallada (incluyendo HTTPS con Caddy) en [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 > **Recordatorio rúbrica**: si la app no está accesible en una URL pública, la nota es **0**.
 
@@ -263,8 +267,14 @@ Para el deploy real (VPS con dominio, Fly.io o Render), seguir la guía en [`doc
 
 ## Scripts útiles del frontend
 
+El container del frontend en producción es **solo nginx** (sirve el build estático), así que ESLint y Vitest se ejecutan desde la host. Requiere Node 20+ y `npm install` la primera vez:
+
 ```bash
-docker compose exec frontend npm run lint   # 0 errores
-docker compose exec frontend npm test       # 13 tests pasando
-docker compose exec frontend npm run build  # vite build → dist/
+cd frontend
+npm install                 # solo la primera vez
+npm run lint                # 0 errores
+npm test                    # 13 tests pasando
+npm run build               # vite build → dist/ (lo que termina sirviendo nginx)
 ```
+
+Para iterar con HMR en el frontend sin rebuildear el container, correr `npm run dev` desde la host: arranca Vite en `:5173` con proxy de `/api` apuntando al container del frontend (que ya hace `proxy_pass` al backend).

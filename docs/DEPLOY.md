@@ -11,7 +11,9 @@ servidor en producción, la nota es **0**.
 > puerto 80. Esto elimina los problemas de CORS y de `SameSite` en las cookies
 > de sesión, y permite que la URL del API no esté hardcodeada en el bundle.
 
-Esta guía cubre tres caminos comunes ordenados por simplicidad.
+Esta guía cubre el deploy en un VPS con dominio propio. La consolidación a un
+solo `docker-compose.yml` con nginx interno hace que sea **`docker compose up`**
+exactamente igual que en local.
 
 Antes de elegir, recordá que necesitás:
 
@@ -19,137 +21,24 @@ Antes de elegir, recordá que necesitás:
 - Credenciales `proy2 / secret` para la DB (exigidas por la rúbrica).
 - Tres servicios: **db**, **backend**, **frontend**.
 
-Los Dockerfiles de producción ya están listos:
+Los Dockerfiles ya están listos y son los mismos para dev y prod:
 
-| Servicio  | Dockerfile                   | Imagen final           |
-| --------- | ---------------------------- | ---------------------- |
-| Backend   | `backend/Dockerfile.prod`    | `node:20-alpine`       |
-| Frontend  | `frontend/Dockerfile.prod`   | `nginx:1.27-alpine`    |
-| DB        | `db/Dockerfile`              | `postgres:16-alpine`   |
+| Servicio  | Dockerfile              | Imagen final           |
+| --------- | ----------------------- | ---------------------- |
+| Backend   | `backend/Dockerfile`    | `node:20-alpine`       |
+| Frontend  | `frontend/Dockerfile`   | `nginx:1.27-alpine` (multi-stage con Vite build) |
+| DB        | `db/Dockerfile`         | `postgres:16-alpine`   |
 
-Y `docker-compose.prod.yml` permite hacer un smoke-test local antes de subir:
+Hay **un solo** `docker-compose.yml`. Para smoke-test local:
 
 ```bash
-VITE_API_URL=http://localhost:58082 docker compose -f docker-compose.prod.yml up --build
+docker compose up --build
+# Sitio: http://localhost:58083/   API proxy: http://localhost:58083/api/health
 ```
 
 ---
 
-## Opción A — Fly.io (recomendado, free-tier amplio)
-
-Fly corre contenedores Docker en máquinas pequeñas. Cada servicio = una "app".
-
-### 1. Instalar y autenticarse
-
-```bash
-curl -L https://fly.io/install.sh | sh
-fly auth signup     # o fly auth login
-```
-
-### 2. Crear la DB Postgres administrada
-
-```bash
-fly postgres create --name proy2web-db --region gru --vm-size shared-cpu-1x \
-  --initial-cluster-size 1 --volume-size 1
-```
-
-Importante: tras crear la DB, **renombrar el usuario y password** para que coincidan
-con la rúbrica:
-
-```bash
-fly postgres connect -a proy2web-db
-# dentro de psql:
-ALTER USER postgres RENAME TO proy2;
-ALTER USER proy2 WITH PASSWORD 'secret';
-CREATE DATABASE tienda OWNER proy2;
-\c tienda
-\i /path/al/01_schema.sql    -- o copiar y pegar el contenido
-\i /path/al/02_seed.sql
-\i /path/al/03_indexes.sql
-\i /path/al/04_views.sql
-```
-
-### 3. Deploy del backend
-
-```bash
-cd backend
-fly launch --name proy2web-backend --no-deploy --dockerfile Dockerfile.prod
-```
-
-Editar el `fly.toml` que se genera:
-
-```toml
-[env]
-  NODE_ENV = "production"
-  PORT = "8080"
-
-[[services]]
-  internal_port = 8080
-  protocol = "tcp"
-  [[services.ports]]
-    handlers = ["http"]
-    port = 80
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-```
-
-```bash
-fly secrets set \
-  DB_HOST=proy2web-db.flycast \
-  DB_PORT=5432 \
-  DB_USER=proy2 \
-  DB_PASSWORD=secret \
-  DB_NAME=tienda \
-  SESSION_SECRET="$(openssl rand -hex 32)"
-fly deploy
-```
-
-Anotá la URL: `https://proy2web-backend.fly.dev`.
-
-### 4. Deploy del frontend
-
-```bash
-cd ../frontend
-fly launch --name proy2web-frontend --no-deploy --dockerfile Dockerfile.prod
-fly deploy --build-arg VITE_API_URL=https://proy2web-backend.fly.dev
-```
-
-URL final: `https://proy2web-frontend.fly.dev`. Esa es la que va al README como
-URL de producción.
-
-> **CORS**: cuando frontend y backend están en dominios distintos, las cookies
-> de sesión necesitan `sameSite: 'none'` + `secure: true`. Ajustar en
-> `backend/src/index.js` antes de subir.
-
----
-
-## Opción B — Render.com
-
-Render tiene una integración nativa con repos GitHub. Cada servicio se define
-en su propio `render.yaml` o desde el dashboard.
-
-1. Crear cuenta en <https://render.com>.
-2. **New → PostgreSQL**: nombre `proy2web-db`, usuario `proy2`, password `secret`,
-   db `tienda`. Plan: free.
-3. Ejecutar los scripts SQL con `psql $DATABASE_URL` desde tu máquina (Render expone
-   la URL en el dashboard).
-4. **New → Web Service** (para backend):
-   - Conectá el repo.
-   - Root directory: `backend`.
-   - Dockerfile path: `backend/Dockerfile.prod`.
-   - Env vars: `DB_HOST`, `DB_PORT`, `DB_USER=proy2`, `DB_PASSWORD=secret`,
-     `DB_NAME=tienda`, `SESSION_SECRET`.
-5. **New → Static Site** (para frontend):
-   - Root directory: `frontend`.
-   - Build command: `npm ci && npm run build`.
-   - Publish directory: `dist`.
-   - Env var de build: `VITE_API_URL=https://tu-backend.onrender.com`.
-   - **Rewrite rule**: `/* → /index.html` (SPA fallback).
-
----
-
-## Opción C — VPS propio con dominio (caso `www.servigtdev.com`)
+## Deploy en VPS con dominio (caso `www.servigtdev.com`)
 
 Este es el deploy más simple cuando ya tenés un servidor con IP pública y un
 dominio apuntado a él. La imagen del frontend trae nginx integrado con
@@ -183,7 +72,7 @@ sed -i "s/FRONTEND_PORT=.*/FRONTEND_PORT=80/" .env
 ### 3. Levantar
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 ```
 
 Eso es todo. El sitio queda accesible en `http://www.servigtdev.com/`. El
@@ -234,7 +123,7 @@ adicionales.
 ```bash
 cd proyecto2-web
 git pull
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 ```
 
 Si cambiaste el schema (`db/init/*.sql`), agregar `down -v` para que el seed

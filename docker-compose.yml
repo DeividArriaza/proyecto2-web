@@ -1,3 +1,19 @@
+# docker-compose unificado: mismo archivo para dev local y para producción.
+#
+# Topología single-domain. El navegador habla SOLO con el frontend (nginx :80),
+# y nginx hace proxy_pass de /api/* al backend en la red interna. La DB y el
+# backend NO se exponen al host — quedan inaccesibles desde fuera de Docker.
+#
+# El frontend usa rutas relativas (`/api/*`), así que el bundle no tiene
+# URLs hardcodeadas y funciona bajo cualquier dominio (localhost,
+# www.servigtdev.com, etc.) sin rebuildear.
+#
+# Levantar:
+#   docker compose up --build
+#
+# En el servidor de producción podés mapear el host port a :80 cambiando
+# FRONTEND_PORT=80 en .env.
+
 services:
   db:
     build: ./db
@@ -8,8 +24,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    # Sin "ports": solo accesible al backend dentro de la red de compose.
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -24,7 +39,7 @@ services:
     container_name: proy2web_backend
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: ${BACKEND_PORT}
       DB_HOST: db
       DB_PORT: ${POSTGRES_PORT}
@@ -32,11 +47,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
-    ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+    # Sin "ports": el backend solo se alcanza vía nginx desde el frontend.
     depends_on:
       db:
         condition: service_healthy
@@ -46,13 +57,11 @@ services:
     container_name: proy2web_frontend
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:${BACKEND_PORT}
-      FRONTEND_PORT: ${FRONTEND_PORT}
+      # Resuelve a "backend:${BACKEND_PORT}" en la red interna del compose.
+      BACKEND_HOST: backend:${BACKEND_PORT}
     ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      # Único puerto expuesto al mundo. En el server real, FRONTEND_PORT=80 en .env.
+      - "${FRONTEND_PORT}:80"
     depends_on:
       - backend
 
