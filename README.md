@@ -4,7 +4,7 @@ Aplicación web para administrar el inventario y las ventas de **Bubu's Bakery**
 
 Levanta tres contenedores (PostgreSQL, backend Node/Express, frontend React/Vite) con un solo comando: `docker compose up`. Documentación de la API REST en [`docs/API.md`](docs/API.md) y guía de deploy en [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
-**Producción**: <http://www.servigtdev.com/>
+**Producción**: <http://www.servigtdev.com:8084/>
 
 > El frontend usa rutas relativas (`/api/*`). Nginx (dentro del contenedor del frontend) hace `proxy_pass` al backend, así que no hay URLs hardcodeadas en el bundle ni problemas de CORS.
 
