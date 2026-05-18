@@ -61,6 +61,35 @@ export function validateCliente({ nombres, apellidos, nit, email, telefono }) {
   return errors;
 }
 
+export function validateSignup({ nombres, apellidos, email, username, password, confirmPassword, id_sucursal }) {
+  const errors = {};
+  if (!nombres || nombres.trim().length < 2) errors.nombres = 'Nombres requeridos';
+  if (!apellidos || apellidos.trim().length < 2) errors.apellidos = 'Apellidos requeridos';
+
+  if (!email || !email.trim()) {
+    errors.email = 'Email requerido';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = 'Email inválido';
+  }
+
+  if (!username || username.trim().length < 3) {
+    errors.username = 'Username mínimo 3 caracteres';
+  } else if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
+    errors.username = 'Solo letras, números, punto, guion y guion bajo';
+  }
+
+  if (!password || password.length < 6) {
+    errors.password = 'Contraseña mínimo 6 caracteres';
+  }
+  if (confirmPassword !== password) {
+    errors.confirmPassword = 'Las contraseñas no coinciden';
+  }
+
+  if (!id_sucursal) errors.id_sucursal = 'Seleccioná una sucursal';
+
+  return errors;
+}
+
 export function hasErrors(errors) {
   return Object.keys(errors).length > 0;
 }

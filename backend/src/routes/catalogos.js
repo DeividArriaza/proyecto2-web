@@ -27,6 +27,17 @@ catalogosRouter.get('/marcas', async (_req, res) => {
   }
 });
 
+catalogosRouter.get('/sucursales', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id_sucursal, nombre, direccion FROM Sucursal WHERE activa = TRUE ORDER BY nombre`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 catalogosRouter.get('/metodos-pago', async (_req, res) => {
   try {
     const { rows } = await pool.query(

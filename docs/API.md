@@ -45,6 +45,29 @@ Response 200:
 ```
 Errores: 400 (campos faltantes), 401 (credenciales inválidas).
 
+### `POST /auth/register`
+Crea un empleado nuevo y abre sesión automáticamente. El rol se asigna como
+`Vendedor Mostrador` por defecto (no se permite elegir rol desde signup público
+para evitar escalación).
+
+Request:
+```json
+{
+  "nombres": "Juan",
+  "apellidos": "Pérez",
+  "email": "juan@ejemplo.com",
+  "telefono": "55551234",
+  "username": "juanp",
+  "password": "secreto123",
+  "id_sucursal": 1
+}
+```
+Response 201: mismo shape que `/auth/login`.
+
+Errores:
+- 400 → validación (campos faltantes, email inválido, password < 6 chars, etc.)
+- 409 → username o email ya existen.
+
 ### `POST /auth/logout`
 Cierra sesión y borra la cookie. → `{ "ok": true }`
 
@@ -158,6 +181,9 @@ Registrar venta. **Transacción explícita con `BEGIN/COMMIT/ROLLBACK`** y
 
 ### `GET /marcas`
 `[{ "id_marca", "nombre", "descripcion" }, ...]`
+
+### `GET /sucursales`
+`[{ "id_sucursal", "nombre", "direccion" }, ...]` — usado en signup.
 
 ### `GET /metodos-pago`
 `[{ "id_metodo_pago", "nombre", "activo" }, ...]` (sólo activos).

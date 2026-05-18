@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateProducto, validateCliente, hasErrors } from '../lib/validators.js';
+import { validateProducto, validateCliente, validateSignup, hasErrors } from '../lib/validators.js';
 
 describe('validateProducto', () => {
   it('acepta un producto válido', () => {
@@ -52,5 +52,36 @@ describe('validateCliente', () => {
   it('rechaza teléfono con letras', () => {
     const errs = validateCliente({ nombres: 'Ana', apellidos: 'López', telefono: '555-ABC-1234' });
     expect(errs.telefono).toBeDefined();
+  });
+});
+
+describe('validateSignup', () => {
+  const valid = {
+    nombres: 'Ana',
+    apellidos: 'López',
+    email: 'ana@example.com',
+    username: 'analopez',
+    password: 'secreto123',
+    confirmPassword: 'secreto123',
+    id_sucursal: 1,
+  };
+
+  it('acepta un signup válido', () => {
+    expect(hasErrors(validateSignup(valid))).toBe(false);
+  });
+
+  it('rechaza si las contraseñas no coinciden', () => {
+    const errs = validateSignup({ ...valid, confirmPassword: 'otro123' });
+    expect(errs.confirmPassword).toBeDefined();
+  });
+
+  it('rechaza username con caracteres inválidos', () => {
+    const errs = validateSignup({ ...valid, username: 'ana lopez!' });
+    expect(errs.username).toBeDefined();
+  });
+
+  it('rechaza si falta sucursal', () => {
+    const errs = validateSignup({ ...valid, id_sucursal: '' });
+    expect(errs.id_sucursal).toBeDefined();
   });
 });
