@@ -70,32 +70,34 @@ INSERT INTO Marca (nombre, descripcion) VALUES
 -- -----------------------------------------------------------------------------
 -- Rol (25) — adaptados al rubro de repostería
 -- -----------------------------------------------------------------------------
-INSERT INTO Rol (nombre, descripcion) VALUES
-('Administrador',           'Control total del sistema'),
-('Gerente General',         'Gestión global de la cadena'),
-('Gerente Sucursal',        'Gestión de un local'),
-('Supervisor Producción',   'Supervisión de turnos en cocina'),
-('Pastelero Jefe',          'Líder del equipo de pastelería'),
-('Pastelero',               'Elaboración de pasteles y postres'),
-('Repostero',               'Especialista en repostería fina'),
-('Decorador',               'Decoración de pasteles y brownies'),
-('Hornero',                 'Operación de hornos y tiempos de cocción'),
-('Asistente Cocina',        'Preparación de mise en place y limpieza'),
-('Cajero',                  'Operación de caja y cobros'),
-('Barista',                 'Preparación de bebidas calientes y frías'),
-('Vendedor Mostrador',      'Atención al cliente en mostrador'),
-('Repartidor',              'Entregas a domicilio y delivery'),
-('Encargado Bodega',        'Control de inventario de insumos'),
-('Encargado Compras',       'Gestión de proveedores y pedidos'),
-('Contador',                'Gestión contable y fiscal'),
-('Auditor',                 'Revisión y auditoría interna'),
-('Marketing Digital',       'Estrategia digital y campañas'),
-('Community Manager',       'Manejo de redes sociales'),
-('Recepcionista',           'Atención al público en oficina central'),
-('Limpieza',                'Mantenimiento y aseo de locales'),
-('Seguridad',               'Vigilancia y prevención de pérdidas'),
-('Practicante',             'Estudiante en práctica supervisada'),
-('Soporte Técnico',         'Soporte al sistema POS y equipos');
+-- Proyecto 3: el 3er valor `grupo` mapea cada rol de negocio a uno de los 5
+-- grupos de autorización (= 5 roles del DBMS en 05_roles.sql).
+INSERT INTO Rol (nombre, descripcion, grupo) VALUES
+('Administrador',           'Control total del sistema',                 'admin'),
+('Gerente General',         'Gestión global de la cadena',               'gerente'),
+('Gerente Sucursal',        'Gestión de un local',                       'gerente'),
+('Supervisor Producción',   'Supervisión de turnos en cocina',           'gerente'),
+('Pastelero Jefe',          'Líder del equipo de pastelería',            'gerente'),
+('Pastelero',               'Elaboración de pasteles y postres',         'bodeguero'),
+('Repostero',               'Especialista en repostería fina',           'bodeguero'),
+('Decorador',               'Decoración de pasteles y brownies',         'bodeguero'),
+('Hornero',                 'Operación de hornos y tiempos de cocción',   'bodeguero'),
+('Asistente Cocina',        'Preparación de mise en place y limpieza',    'bodeguero'),
+('Cajero',                  'Operación de caja y cobros',                'vendedor'),
+('Barista',                 'Preparación de bebidas calientes y frías',   'vendedor'),
+('Vendedor Mostrador',      'Atención al cliente en mostrador',          'vendedor'),
+('Repartidor',              'Entregas a domicilio y delivery',           'vendedor'),
+('Encargado Bodega',        'Control de inventario de insumos',          'bodeguero'),
+('Encargado Compras',       'Gestión de proveedores y pedidos',          'bodeguero'),
+('Contador',                'Gestión contable y fiscal',                 'consulta'),
+('Auditor',                 'Revisión y auditoría interna',              'consulta'),
+('Marketing Digital',       'Estrategia digital y campañas',             'consulta'),
+('Community Manager',       'Manejo de redes sociales',                  'consulta'),
+('Recepcionista',           'Atención al público en oficina central',    'vendedor'),
+('Limpieza',                'Mantenimiento y aseo de locales',           'consulta'),
+('Seguridad',               'Vigilancia y prevención de pérdidas',       'consulta'),
+('Practicante',             'Estudiante en práctica supervisada',        'consulta'),
+('Soporte Técnico',         'Soporte al sistema POS y equipos',          'admin');
 
 -- -----------------------------------------------------------------------------
 -- Sucursal (25) — franquicia Bubu's en expansión por Guatemala
@@ -262,6 +264,21 @@ INSERT INTO Empleado (nombres, apellidos, email, telefono, username, password_ha
 ('Francisco',  'Wong Chang',            'francisco.wong@bubus.gt',      '5511-0023', 'fwong',       '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2024-12-15',  23, 23),
 ('Alicia',     'Yax Coc',               'alicia.yax@bubus.gt',          '5511-0024', 'ayax',        '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-01-01',  24, 24),
 ('David',      'Zepeda Ramírez',        'david.zepeda@bubus.gt',        '5511-0025', 'dzepeda',     '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-01-15',  25, 25);
+
+-- Proyecto 3 — usuarios de prueba, uno por cada grupo/rol del DBMS.
+-- Contraseña: demo123 (mismo hash bcrypt del resto del seed). Rúbrica Cat I:
+-- "un usuario de prueba funcional por cada rol incluido en el script de datos".
+--   id_rol  1 = Administrador     → grupo admin
+--   id_rol  2 = Gerente General   → grupo gerente
+--   id_rol 13 = Vendedor Mostrador→ grupo vendedor
+--   id_rol 15 = Encargado Bodega  → grupo bodeguero
+--   id_rol 18 = Auditor           → grupo consulta
+INSERT INTO Empleado (nombres, apellidos, email, telefono, username, password_hash, fecha_ingreso, id_rol, id_sucursal) VALUES
+('Demo',  'Administrador', 'admin.demo@bubus.gt',    '5500-0001', 'admin_demo',    '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-02-01',  1,  1),
+('Demo',  'Gerente',       'gerente.demo@bubus.gt',  '5500-0002', 'gerente_demo',  '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-02-01',  2,  1),
+('Demo',  'Vendedor',      'vendedor.demo@bubus.gt', '5500-0003', 'vendedor_demo', '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-02-01', 13,  1),
+('Demo',  'Bodeguero',     'bodega.demo@bubus.gt',   '5500-0004', 'bodega_demo',   '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-02-01', 15,  1),
+('Demo',  'Consulta',      'consulta.demo@bubus.gt', '5500-0005', 'consulta_demo', '$2b$10$ZoBfOfpBNnBLgYRUr4IBcOKV.eYP4MJdyItAeOukioSS3kiN4Yv6i', '2025-02-01', 18,  1);
 
 -- -----------------------------------------------------------------------------
 -- CompraProveedor (25) — pedidos de insumos a proveedores

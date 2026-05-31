@@ -43,7 +43,12 @@ CREATE TABLE Producto (
 CREATE TABLE Rol (
   id_rol        SERIAL       PRIMARY KEY,
   nombre        VARCHAR(40)  NOT NULL UNIQUE,
-  descripcion   TEXT
+  descripcion   TEXT,
+  -- Proyecto 3: cada rol de negocio se agrupa en uno de los 5 grupos de
+  -- autorización, que se corresponden 1:1 con los 5 roles del DBMS
+  -- (ver db/init/05_roles.sql). La UI y el backend autorizan por `grupo`.
+  grupo         VARCHAR(20)  NOT NULL DEFAULT 'consulta'
+                  CHECK (grupo IN ('admin','gerente','vendedor','bodeguero','consulta'))
 );
 
 CREATE TABLE Sucursal (

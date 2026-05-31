@@ -20,3 +20,22 @@ export function requireAuth(req, res, next) {
   }
   next();
 }
+
+// requireRole(...grupos) — autoriza según el `grupo` del usuario (admin,
+// gerente, vendedor, bodeguero, consulta), que se corresponde con los 5 roles
+// del DBMS. Devuelve 401 si no hay sesión y 403 si el grupo no está permitido.
+export function requireRole(...grupos) {
+  return (req, res, next) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+    if (!grupos.includes(req.session.user.grupo)) {
+      return res.status(403).json({
+        error: 'No tiene permiso para realizar esta operación',
+        rol: req.session.user.rol,
+        requiere: grupos,
+      });
+    }
+    next();
+  };
+}

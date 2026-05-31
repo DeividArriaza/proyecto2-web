@@ -16,7 +16,7 @@ authRouter.post('/login', async (req, res) => {
       `
       SELECT e.id_empleado, e.username, e.password_hash,
              e.nombres, e.apellidos, e.email,
-             r.id_rol,      r.nombre AS rol,
+             r.id_rol,      r.nombre AS rol, r.grupo,
              s.id_sucursal, s.nombre AS sucursal
       FROM Empleado e
       JOIN Rol      r ON r.id_rol      = e.id_rol
@@ -40,6 +40,7 @@ authRouter.post('/login', async (req, res) => {
       email: row.email,
       rol: row.rol,
       id_rol: row.id_rol,
+      grupo: row.grupo,
       sucursal: row.sucursal,
       id_sucursal: row.id_sucursal,
     };
@@ -111,7 +112,7 @@ authRouter.post('/register', async (req, res) => {
     const { rows } = await client.query(
       `
       SELECT e.id_empleado, e.username, e.nombres, e.apellidos, e.email,
-             r.id_rol,      r.nombre AS rol,
+             r.id_rol,      r.nombre AS rol, r.grupo,
              s.id_sucursal, s.nombre AS sucursal
       FROM Empleado e
       JOIN Rol      r ON r.id_rol      = e.id_rol
@@ -132,6 +133,7 @@ authRouter.post('/register', async (req, res) => {
       email: row.email,
       rol: row.rol,
       id_rol: row.id_rol,
+      grupo: row.grupo,
       sucursal: row.sucursal,
       id_sucursal: row.id_sucursal,
     };

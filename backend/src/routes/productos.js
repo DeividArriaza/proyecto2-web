@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
-import { requireAuth } from '../middleware.js';
+import { requireAuth, requireRole } from '../middleware.js';
 
 export const productosRouter = Router();
+
+// Roles que gestionan el catálogo/inventario: admin, gerente y bodeguero.
+const puedeGestionarProductos = requireRole('admin', 'gerente', 'bodeguero');
 
 // Listado activo: lee de vw_producto_detalle (CREATE VIEW en 04_views.sql).
 // La vista encapsula JOIN Producto + Categoria + Marca + flag stock_bajo.
@@ -47,7 +50,7 @@ productosRouter.get('/:id', async (req, res) => {
   }
 });
 
-productosRouter.post('/', requireAuth, async (req, res) => {
+productosRouter.post('/', requireAuth, puedeGestionarProductos, async (req, res) => {
   const { sku, nombre, descripcion, precio, stock, stock_minimo, id_categoria, id_marca } = req.body ?? {};
   if (!sku?.trim() || !nombre?.trim()) {
     return res.status(400).json({ error: 'sku y nombre son requeridos' });
@@ -93,7 +96,7 @@ productosRouter.post('/', requireAuth, async (req, res) => {
   }
 });
 
-productosRouter.put('/:id', requireAuth, async (req, res) => {
+productosRouter.put('/:id', requireAuth, puedeGestionarProductos, async (req, res) => {
   const { sku, nombre, descripcion, precio, stock, stock_minimo, id_categoria, id_marca } = req.body ?? {};
   if (!sku?.trim() || !nombre?.trim()) {
     return res.status(400).json({ error: 'sku y nombre son requeridos' });
@@ -145,7 +148,7 @@ productosRouter.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Soft delete: marca activo=FALSE para preservar FKs de DetalleVenta/DetalleCompra.
-productosRouter.delete('/:id', requireAuth, async (req, res) => {
+productosRouter.delete('/:id', requireAuth, requireRole('admin', 'gerente'), async (req, res) => {
   try {
     const { rowCount } = await pool.query(
       `UPDATE Producto SET activo = FALSE WHERE id_producto = $1`,
@@ -155,5 +158,32 @@ productosRouter.delete('/:id', requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================================================
+// PATCH /productos/:id/stock — ajuste manual de inventario vía STORED PROCEDURE
+// sp_ajustar_stock (fija stock absoluto + registra MovimientoStock 'AJUSTE').
+// Roles: admin y bodeguero.
+// =============================================================================
+productosRouter.patch('/:id/stock', requireAuth, requireRole('admin', 'bodeguero'), async (req, res) => {
+  const { nuevo_stock, motivo } = req.body ?? {};
+  const id_producto = Number(req.params.id);
+  const id_empleado = req.session.user.id;
+  const id_sucursal = req.session.user.id_sucursal;
+
+  if (nuevo_stock == null || !Number.isInteger(Number(nuevo_stock)) || Number(nuevo_stock) < 0) {
+    return res.status(400).json({ error: 'nuevo_stock debe ser un entero >= 0' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM sp_ajustar_stock($1, $2, $3, $4, $5)`,
+      [id_producto, id_empleado, id_sucursal, Number(nuevo_stock), motivo?.trim() || null]
+    );
+    res.json({ id_producto, stock: rows[0].o_stock_resultante });
+  } catch (err) {
+    const negocio = /no existe|no puede ser negativo|no hay ajuste/i;
+    const status = negocio.test(err.message) ? 400 : 500;
+    res.status(status).json({ error: err.message });
   }
 });

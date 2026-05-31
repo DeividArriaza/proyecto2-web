@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { palette } from './api.js';
 import { useAuth } from './context/AuthContext.jsx';
 import { useCart } from './context/CartContext.jsx';
+import { rutasVisibles } from './permissions.js';
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -46,11 +47,15 @@ export default function Layout() {
             className={`app-nav${menuOpen ? ' app-nav--open' : ''}`}
             onClick={() => setMenuOpen(false)}
           >
-            <NavItem to="/" label="Catálogo" />
-            <NavItem to="/productos" label="Productos" />
-            <NavItem to="/clientes" label="Clientes" />
-            <NavItem to="/ventas" label="Ventas" badge={totals.itemCount} />
-            <NavItem to="/reportes" label="Reportes" />
+            {/* Solo se muestran las rutas permitidas para el grupo del usuario. */}
+            {rutasVisibles(user.grupo).map((r) => (
+              <NavItem
+                key={r.path}
+                to={r.path}
+                label={r.label}
+                badge={r.path === '/ventas' ? totals.itemCount : undefined}
+              />
+            ))}
           </nav>
         </div>
 

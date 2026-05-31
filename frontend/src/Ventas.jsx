@@ -3,9 +3,14 @@ import { api, palette } from './api.js';
 import { ErrorBanner, SuccessBanner, formStyles } from './Layout.jsx';
 import { PageHeader } from './ProductosAdmin.jsx';
 import { useCart } from './context/CartContext.jsx';
+import { useAuth } from './context/AuthContext.jsx';
+import { puedeHacer } from './permissions.js';
 
 export default function Ventas() {
   const cart = useCart();
+  const { user } = useAuth();
+  const puedeVender = puedeHacer(user.grupo, 'registrarVenta');
+  const puedeAnular = puedeHacer(user.grupo, 'anularVenta');
   const [ventas, setVentas] = useState([]);
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -87,6 +92,20 @@ export default function Ventas() {
     }
   }
 
+  async function handleAnular(v) {
+    setError(null);
+    setSuccess(null);
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`¿Anular la venta ${v.numero_factura}? Se devolverá el stock.`)) return;
+    try {
+      await api(`/ventas/${v.id_venta}/anular`, { method: 'POST' });
+      setSuccess(`Venta ${v.numero_factura} anulada — stock revertido`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -97,6 +116,7 @@ export default function Ventas() {
       <ErrorBanner error={error} onClose={() => setError(null)} />
       <SuccessBanner message={success} onClose={() => setSuccess(null)} />
 
+      {puedeVender && (
       <div
         style={{
           background: palette.surface,
@@ -110,8 +130,9 @@ export default function Ventas() {
         <h3 style={{ margin: '0 0 4px', color: palette.primary }}>Nueva venta</h3>
         <p style={{ margin: '0 0 18px', color: palette.textSoft, fontSize: '0.9rem' }}>
           El carrito se maneja con un <code>useReducer</code> en el CartContext.
-          La operación corre dentro de una transacción explícita en el backend
-          (BEGIN/COMMIT/ROLLBACK).
+          La venta se registra invocando el stored procedure
+          <code> sp_registrar_venta</code> (transacción atómica con descuento de
+          stock y manejo de excepciones).
         </p>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -301,6 +322,7 @@ export default function Ventas() {
           </div>
         </form>
       </div>
+      )}
 
       <h3 style={{ color: palette.primary, marginBottom: 12 }}>Ventas recientes</h3>
       <div
@@ -323,6 +345,7 @@ export default function Ventas() {
                 <Th>Método</Th>
                 <Th align="right">Total</Th>
                 <Th>Estado</Th>
+                {puedeAnular && <Th align="center">Acciones</Th>}
               </tr>
             </thead>
             <tbody>
@@ -350,11 +373,35 @@ export default function Ventas() {
                       {v.estado}
                     </span>
                   </Td>
+                  {puedeAnular && (
+                    <Td align="center">
+                      {v.estado === 'COMPLETADA' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleAnular(v)}
+                          style={{
+                            background: 'transparent',
+                            border: `1px solid ${palette.errorBd}`,
+                            color: palette.primary,
+                            borderRadius: 999,
+                            padding: '4px 12px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Anular
+                        </button>
+                      ) : (
+                        <span style={{ color: palette.textSoft, fontSize: '0.75rem' }}>—</span>
+                      )}
+                    </Td>
+                  )}
                 </tr>
               ))}
               {ventas.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: palette.textSoft }}>
+                  <td colSpan={puedeAnular ? 8 : 7} style={{ padding: 24, textAlign: 'center', color: palette.textSoft }}>
                     Aún no hay ventas registradas.
                   </td>
                 </tr>

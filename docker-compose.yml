@@ -17,7 +17,7 @@
 services:
   db:
     build: ./db
-    container_name: proy2web_db
+    container_name: proy3_db
     restart: unless-stopped
     command: ["postgres", "-p", "${POSTGRES_PORT}"]
     environment:
@@ -36,7 +36,7 @@ services:
 
   backend:
     build: ./backend
-    container_name: proy2web_backend
+    container_name: proy3_backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -54,7 +54,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: proy2web_frontend
+    container_name: proy3_frontend
     restart: unless-stopped
     environment:
       # Resuelve a "backend:${BACKEND_PORT}" en la red interna del compose.

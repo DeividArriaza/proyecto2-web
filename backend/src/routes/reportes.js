@@ -10,6 +10,30 @@ import { requireAuth } from '../middleware.js';
 export const reportesRouter = Router();
 
 // -----------------------------------------------------------------------------
+// R0. Total de ventas en un rango de fechas — vía STORED PROCEDURE de
+// agregación sp_total_ventas (núm. ventas, monto total, ticket promedio).
+// Endpoint de agregación de datos. Query params opcionales: ?desde&hasta
+// (YYYY-MM-DD). Por defecto, el año en curso.
+// -----------------------------------------------------------------------------
+reportesRouter.get('/total-ventas', requireAuth, async (req, res) => {
+  const desde = req.query.desde || '2000-01-01';
+  const hasta = req.query.hasta || '2999-12-31';
+  try {
+    const { rows } = await pool.query(`SELECT * FROM sp_total_ventas($1::date, $2::date)`, [desde, hasta]);
+    const r = rows[0];
+    res.json({
+      desde,
+      hasta,
+      num_ventas: Number(r.num_ventas),
+      monto_total: Number(r.monto_total),
+      ticket_promedio: Number(r.ticket_promedio),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
 // R1. Top 10 productos más vendidos.
 // Rúbrica II: CTE (WITH) + JOIN entre múltiples tablas.
 // -----------------------------------------------------------------------------
