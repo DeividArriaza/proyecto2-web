@@ -35,7 +35,7 @@ El **ORM (Sequelize)** maneja el CRUD de entidades; los **stored procedures** at
 ## Requisitos previos
 
 - Docker y Docker Compose instalados.
-- Puerto `58085` libre en el host (configurable vía `FRONTEND_PORT` en `.env`).
+- Puerto `58083` libre en el host (configurable vía `FRONTEND_PORT` en `.env`).
 
 ---
 
@@ -52,8 +52,8 @@ Cuando los tres servicios estén `healthy/up` (≈ 30 segundos), todo el sitio e
 
 | Recurso       | URL                                          |
 | ------------- | -------------------------------------------- |
-| Frontend SPA  | <http://localhost:58085>                     |
-| API (proxy)   | <http://localhost:58085/api/health>          |
+| Frontend SPA  | <http://localhost:58083>                     |
+| API (proxy)   | <http://localhost:58083/api/health>          |
 
 El **backend y la DB no se exponen al host** — viven en la red interna de Docker. El frontend habla con el API por rutas relativas (`/api/*`) y nginx (dentro del contenedor del frontend) hace `proxy_pass` al backend. Mismo comportamiento en desarrollo y en producción.
 
